@@ -11,6 +11,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Query parameter is required" }, { status: 400 })
   }
 
+  if (!SPOONACULAR_API_KEY) {
+    return NextResponse.json({ error: "API key not configured" }, { status: 500 })
+  }
+
   try {
     const response = await fetch(
       `${API_URL}?apiKey=${SPOONACULAR_API_KEY}&query=${query}&diet=gluten free&addRecipeInformation=true&number=10`,
@@ -18,7 +22,7 @@ export async function GET(request: Request) {
     )
 
     if (!response.ok) {
-      throw new Error("Failed to fetch recipes")
+      throw new Error(`API responded with status: ${response.status}`)
     }
 
     const data = await response.json()

@@ -23,24 +23,42 @@ export default function Asistente() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!input.trim()) return
+    if (!input.trim() || isLoading) return
 
-    const userMessage = input
+    const userMessage = input.trim()
     setInput("")
     setMessages((prev) => [...prev, { role: "user", content: userMessage }])
     setIsLoading(true)
 
-    // Simular respuesta del asistente
-    setTimeout(() => {
+    try {
+      const response = await fetch('/api/chat', {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messages: [...messages, { role: "user", content: userMessage }],
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error("Failed to get response")
+      }
+
+      const data = await response.json()
+      setMessages((prev) => [...prev, { role: "assistant", content: data.response }])
+    } catch (error) {
+      console.error("Error getting response:", error)
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          content: "Aquí iría la respuesta del asistente virtual. Esta es una simulación de respuesta.",
+          content: "Lo siento, ha ocurrido un error. Por favor, inténtalo de nuevo.",
         },
       ])
+    } finally {
       setIsLoading(false)
-    }, 1000)
+    }
   }
 
   return (
@@ -64,7 +82,7 @@ export default function Asistente() {
                   {message.role === "assistant" && (
                     <ChefHat className="h-5 w-5 text-primary mt-1" />
                   )}
-                  <p className="text-sm">{message.content}</p>
+                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                 </div>
               </CardContent>
             </Card>
@@ -83,6 +101,7 @@ export default function Asistente() {
             onChange={(e) => setInput(e.target.value)}
             placeholder="Pregunta sobre recetas sin gluten..."
             className="flex-1"
+            disabled={isLoading}
           />
           <Button type="submit" disabled={isLoading}>
             <Send className="h-4 w-4" />
